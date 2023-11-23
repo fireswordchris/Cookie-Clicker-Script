@@ -51,10 +51,11 @@ def costCalc(builds, buildings, build, cps):
     i = 0
     for b in builds:
         b = float(b)
-        if (b == 0):
-            pass
-        else:
-            costs.append(cps[i]/(buildings[i].cost*1.15**b))
+        #if (b == 0):
+        #    pass
+        #else:
+        #    costs.append(cps[i]/(buildings[i].cost*1.15**b))
+        costs.append(cps[i]/(buildings[i].cost*1.15**b))
         i+=1
 
     cost = cps[buildings.index(build)]/(build.cost*1.15**builds[buildings.index(build)])
@@ -75,26 +76,19 @@ def calcAllCosts(builds, buildings, cps):
     for b in builds:
         b = int(b)
         
-        if (b == 0):
-            pass
-        else:
-            costs.append(cps[i]/(buildings[i].cost*1.15**b))
+        costs.append(cps[i]/(buildings[i].cost*1.15**b))
         i+=1
     
-    print(costs)
     for build in buildings:
-        if (builds[buildings.index(build)] > 0):
-            cost = costs[buildings.index(build)]
-            for c in costs:
-                if (cost >= c):
-                    if (costs.index(c) == len(costs)-1):
-                        bestBuild = build
-                        break
-                    pass
-                else:
+        cost = costs[buildings.index(build)]
+        for c in costs:
+            if (cost >= c):
+                if (costs.index(c) == len(costs)-1):
+                    bestBuild = build
                     break
-        else:
-            break
+                pass
+            else:
+                break
     
     return bestBuild
 
@@ -194,9 +188,9 @@ def main():
         temple = building("Temple", coord(35,405), (90,99,97), (140,137,122), coord(1780,605),20000000,7800)
         wizard = building("Wizard Tower", coord(35,485), (103,113,108), (162,161,143), coord(1780, 675),330000000,44000)
         shipment = building("Shipment", coord(35,540), (90,98,95), (144,138,122), coord(1780,735),5100000000,260000)
-        lab = building("Alchemy Lab", coord(35,605), (90,95,93), (143,138,119), coord(1780,800),75000000000,1600000)
+        lab = building("Alchemy Lab", coord(35,605), (90,95,93), (141,134,118), coord(1780,800),75000000000,1600000)
         portal = building("Portal", coord(35,670), (94,102,100), (145,143,130), coord(1780,865),1000000000000,10000000)
-        time = building("Time Machine", coord(35,720), (81,84,79), (131,126,11), coord(1780,0),14000000000000,65000000)
+        time = building("Time Machine", coord(35,720), (101,109,105), (131,126,11), coord(1780,0),14000000000000,65000000)
         upgrade = coord(1655,85)
         
     else:
@@ -236,7 +230,7 @@ def main():
     buildEntries = []
     effectivenessEntries = []
     cpsEntries = []
-    prevBest = cursor
+    prevBest = time
 
     for i in range(len(buildingArray)+1):
         for j in range(len(topRow)):
@@ -278,7 +272,7 @@ def main():
         upgrades = {"top":upgrade.y, "left":upgrade.x, "width":1, "height":1}
         output = "testScreenshot.png"
         
-        #pic = sct.grab(buildings)
+        pic = sct.grab(buildings)
         #print(pic.pixel(cursor.x,cursor.y))
         #print(pic.pixel(grandma.x,grandma.y))
         #print(pic.pixel(farm.x,farm.y))
@@ -288,9 +282,9 @@ def main():
         #print(pic.pixel(temple.x,temple.y))
         #print(pic.pixel(wizard.x,wizard.y))
         #print(pic.pixel(shipment.x,shipment.y))
-        #print(pic.pixel(lab.x,lab.y))
-        #print(pic.pixel(portal.x,portal.y))
-        #print(pic.pixel(time.x,time.y))
+        print(pic.pixel(lab.x,lab.y))
+        print(pic.pixel(portal.x,portal.y))
+        print(pic.pixel(time.x,time.y))
         #mss.tools.to_png(pic.rgb,pic.size, output=output)
         
         while True:
@@ -299,6 +293,28 @@ def main():
                 
             if (keyboard.is_pressed("esc")):
                 break
+                
+            if (not running):
+                if (builds[0] >= 1):
+                    best = calcAllCosts(builds,buildingArray,cps)
+                    if (prevBest != best):
+                        effectivenessEntries[buildingArray.index(best)].config({"bg":"#93E9BE"})
+                        effectivenessEntries[buildingArray.index(prevBest)].config({"bg":"white"}) 
+                        prevBest = best
+                    else:
+                        pass
+                
+                updateGrid(tableEntries,displayMultiplier,builds,cps)
+                    
+                root.update_idletasks()
+                root.update()
+                
+            for c in cpsEntries:
+                if (c.get() != "" and c.get().isdigit()):
+                    try:
+                        cps[cpsEntries.index(c)] = int(c.get())
+                    except:
+                        cps[cpsEntries.index(c)] = float(c.get())
             
             if (running):
                 pic2 = sct.grab(upgrades)
@@ -345,31 +361,25 @@ def main():
                     click(cursor.tX,cursor.tY,1)
                     builds[0] += 1
                     
+                for e in buildEntries:
+                    e.delete(0,tk.END)
+                    e.insert(0,builds[buildEntries.index(e)])
+                    
+                if (builds[0] >= 1):
+                    best = calcAllCosts(builds,buildingArray,cps)
+                    if (prevBest != best):
+                        effectivenessEntries[buildingArray.index(best)].config({"bg":"#93E9BE"})
+                        effectivenessEntries[buildingArray.index(prevBest)].config({"bg":"white"}) 
+                        prevBest = best
+                    else:
+                        pass
+                    
+                updateGrid(tableEntries,displayMultiplier,builds,cps)
+                    
+                root.update_idletasks()
+                root.update()
+                    
                 running = click(cookie.x,cookie.y, 100)
-            
-            
-            root.update_idletasks()
-            root.update()
-            
-            for e in buildEntries:
-                e.delete(0,tk.END)
-                e.insert(0,builds[buildEntries.index(e)])
-                
-            for c in cpsEntries:
-                if (c.get() != ""):
-                    try:
-                        cps[cpsEntries.index(c)] = int(c.get())
-                    except:
-                        cps[cpsEntries.index(c)] = float(c.get())
-                        
-            best = calcAllCosts(builds,buildingArray,cps)
-            if (prevBest != best):
-                effectivenessEntries[buildingArray.index(best)].config({"bg":"#93E9BE"})
-                effectivenessEntries[buildingArray.index(prevBest)].config({"bg":"white"}) 
-                prevBest = best
-            else:
-                pass
-            updateGrid(tableEntries,displayMultiplier,builds,cps)
                 
         saveBuilds(builds,cps,baseCPS)
                 
