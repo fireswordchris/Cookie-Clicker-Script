@@ -68,29 +68,51 @@ def costCalc(builds, buildings, build, cps):
         
     return True
 
-def calcAllCosts(builds, buildings, cps):
+def calcAllCosts(builds, buildings, cps, best=True):
     costs = []
+    costs2 = []
     i = 0
     tempBuild = buildings[0]
-    
+        
     for b in builds:
         b = int(b)
-        
+            
         costs.append(cps[i]/(buildings[i].cost*1.15**b))
+        costs2.append(buildings[i].cost*1.15**b)
         i+=1
-    
-    for build in buildings:
-        cost = costs[buildings.index(build)]
-        for c in costs:
-            if (cost >= c):
-                if (costs.index(c) == len(costs)-1):
-                    bestBuild = build
+        
+    if (best):
+        for build in buildings:
+            cost = costs[buildings.index(build)]
+            for c in costs:
+                if (cost >= c):
+                    if (costs.index(c) == len(costs)-1):
+                        bestBuild = build
+                        break
+                    pass
+                else:
                     break
-                pass
-            else:
-                break
+        
+        return bestBuild
     
-    return bestBuild
+    else:
+        mCosts = []
+        
+        for cost in costs2:
+            if (cost / 1000 < 1000):
+                mCosts.append(str(round(cost/1000,3)) + " k")
+            elif (cost / 1000000 < 1000):
+                mCosts.append(str(round(cost/1000000,3)) + " mil")
+            elif (cost / 1000000000 < 1000):
+                mCosts.append(str(round(cost/1000000000,3)) + " bil")
+            elif (cost / 1000000000000 < 1000):
+                mCosts.append(str(round(cost/1000000000000,3)) + " tril")
+            elif (cost / 1000000000000000 < 1000):
+                mCosts.append(str(round(cost/1000000000000000,3)) + " quad")
+            else:
+                mCosts.append(str(cost))
+        
+        return mCosts
 
 def saveBuilds(builds, cps, baseCPS):
     with open("builds.txt","w") as file:
@@ -127,7 +149,7 @@ def wipeBuilds(builds,cps,baseCPS,table):
             if (table.index(e) % 5 == 0):
                 i+=1
 
-def updateGrid(table,multi,builds: list,cps: list):
+def updateGrid(table,multi,builds: list,cps: list, buildingArray):
     variables = []
     builds.clear()
     cps.clear()
@@ -150,13 +172,17 @@ def updateGrid(table,multi,builds: list,cps: list):
                     cps.append(float(e.get()))
             if (table.index(e) % 5 == 3):
                 #Base Cost
-                variables.append(int(e.get()))
+                #variables.append(int(e.get()))
+                variables.append(int(buildingArray[i].cost))
+                i+=1
                 
             if (table.index(e) % 5 == 4):
                 e.delete(0,tk.END)
                 e.insert(0,round((variables[1]/(variables[2]*1.15**variables[0]))*multi, 3))
 
                 variables.clear()
+            
+            
 
 def main():
     steam = True
@@ -225,11 +251,12 @@ def main():
     root.wm_attributes("-topmost",1)
     root.geometry = ("500x500")
 
-    topRow = ["Building", "Count", "CPS", "Base Cost", "Effectiveness"]
+    topRow = ["Building", "Count", "CPS", "Cost", "Effectiveness"]
     tableEntries = []
     buildEntries = []
     effectivenessEntries = []
     cpsEntries = []
+    costEntries = []
     prevBest = time
 
     for i in range(len(buildingArray)+1):
@@ -247,6 +274,7 @@ def main():
                 buildEntries.append(e)
             elif (j == 3):
                 e.insert(0,buildingArray[i-1].cost)
+                costEntries.append(e)
             elif (j == 4):
                 effectivenessEntries.append(e)
                 
@@ -256,7 +284,7 @@ def main():
     wipe = tk.Button(root, text="Wipe file", fg="white", bg="red", command = lambda: wipeBuilds(builds,cps,baseCPS,tableEntries), width=10,height=5)
     wipe.grid(row=len(builds)+1, column=0)
             
-    update = tk.Button(root, text="Update", fg="white",bg="darkgray",width=15,height=5, command = lambda: updateGrid(tableEntries,displayMultiplier,builds,cps))
+    update = tk.Button(root, text="Update", fg="white",bg="darkgray",width=15,height=5, command = lambda: updateGrid(tableEntries,displayMultiplier,builds,cps, buildingArray))
     update.grid(row=len(builds)+1,column=2)
 
     save = tk.Button(root, text="Save", fg="white", bg="red", command = lambda: saveBuilds(builds, cps, baseCPS), width=10,height=5)
@@ -295,16 +323,27 @@ def main():
                 break
                 
             if (not running):
-                if (builds[0] >= 1):
-                    best = calcAllCosts(builds,buildingArray,cps)
-                    if (prevBest != best):
-                        effectivenessEntries[buildingArray.index(best)].config({"bg":"#93E9BE"})
-                        effectivenessEntries[buildingArray.index(prevBest)].config({"bg":"white"}) 
-                        prevBest = best
-                    else:
-                        pass
-                
-                updateGrid(tableEntries,displayMultiplier,builds,cps)
+                try:
+                    if (builds[0] >= 1):
+                        best = calcAllCosts(builds,buildingArray,cps)
+                        if (prevBest != best):
+                            effectivenessEntries[buildingArray.index(best)].config({"bg":"#93E9BE"})
+                            effectivenessEntries[buildingArray.index(prevBest)].config({"bg":"white"}) 
+                            prevBest = best
+                        else:
+                            pass
+                        
+                    mCosts = calcAllCosts(builds,buildingArray,cps,False)
+                    i = 0
+                    for cost in mCosts:
+                        e = costEntries[i]
+                        e.delete(0,tk.END)
+                        e.insert(0,cost)
+                        i+=1
+                        
+                    updateGrid(tableEntries,displayMultiplier,builds,cps, buildingArray)
+                except:
+                    pass
                     
                 root.update_idletasks()
                 root.update()
@@ -374,7 +413,15 @@ def main():
                     else:
                         pass
                     
-                updateGrid(tableEntries,displayMultiplier,builds,cps)
+                updateGrid(tableEntries,displayMultiplier,builds,cps,buildingArray)
+                
+                mCosts = calcAllCosts(builds,buildingArray,cps,False)
+                i = 0
+                for cost in mCosts:
+                    e = costEntries[i]
+                    e.delete(0,tk.END)
+                    e.insert(0,cost)
+                    i+=1
                     
                 root.update_idletasks()
                 root.update()
