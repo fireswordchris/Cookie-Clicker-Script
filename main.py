@@ -65,7 +65,7 @@ def costCalc(builds, buildings, build, cps):
             pass
         else:
             return False
-        
+    
     return True
 
 def calcAllCosts(builds, buildings, cps, best=True):
@@ -182,7 +182,24 @@ def updateGrid(table,multi,builds: list,cps: list, buildingArray):
 
                 variables.clear()
             
-            
+def calcTotalCPS(cps,builds):
+    totalCPS = 0
+    
+    i = 0
+    for c in cps:
+        totalCPS += (c * builds[i])
+        i+=1
+        
+    if (totalCPS / 1000 < 1000):
+        return str(round(totalCPS/1000,3)) + " k CPS"
+    elif (totalCPS / 1000000 < 1000):
+        return str(round(totalCPS/1000000,3)) + " mil CPS"
+    elif (totalCPS / 1000000000 < 1000):
+        return str(round(totalCPS/1000000000,3)) + " bil CPS"
+    elif (totalCPS / 1000000000000 < 1000):
+        return str(round(totalCPS/1000000000000,3)) + " tril CPS"
+    else:
+        return str(totalCPS) + " CPS"  
 
 def main():
     steam = True
@@ -232,9 +249,11 @@ def main():
         wizard = building("Wizard Tower", coord(35,485), (101,109,103), (152,149,132), coord(1780, 780),330000000,44000)
         shipment = building("Shipment", coord(35,540), (99,107,103), (154,148,132), coord(1780,845),5100000000,260000)
         lab = building("Alchemy Lab", coord(35,605), (94,103,99), (143,138,119), coord(1780,910),75000000000,1600000)
-        portal = building("Portal", coord(35,670), (93,102,100), (145,143,130), coord(1780,975),1000000000000,10000000)
-        time = building("Time Machine", coord(35,720), (81,84,79), (131,126,11), coord(1780,1030),14000000000000,65000000)
+        portal = building("Portal", coord(35,671), (93,102,100), (143, 140, 125), coord(1780,975),1000000000000,10000000)
+        time = building("Time Machine", coord(35,720), (81,84,79), (149,144,126), coord(1780,1030),14000000000000,65000000)
         upgrade = coord(1655,195)
+        
+        portal.color2 = (143, 140, 125)
     
     running = False
     
@@ -284,8 +303,10 @@ def main():
     wipe = tk.Button(root, text="Wipe file", fg="white", bg="red", command = lambda: wipeBuilds(builds,cps,baseCPS,tableEntries), width=10,height=5)
     wipe.grid(row=len(builds)+1, column=0)
             
-    update = tk.Button(root, text="Update", fg="white",bg="darkgray",width=15,height=5, command = lambda: updateGrid(tableEntries,displayMultiplier,builds,cps, buildingArray))
-    update.grid(row=len(builds)+1,column=2)
+    totalCPS = tk.Label(root, text=" CPS", fg="black",bg="lightskyblue",font=("Arial",14,"bold"))
+    totalCPS.grid(row=len(builds)+1,column=2)
+    
+    totalCPS.config(text=calcTotalCPS(cps,builds))
 
     save = tk.Button(root, text="Save", fg="white", bg="red", command = lambda: saveBuilds(builds, cps, baseCPS), width=10,height=5)
     save.grid(row=len(builds)+1, column=len(topRow)-1)
@@ -294,7 +315,7 @@ def main():
     t.sleep(1)
     
     #MAIN LOOP INSIDE THE MSS
-    
+
     with mss.mss() as sct:
         buildings = {"top":buildingBox.y1, "left":buildingBox.x1, "width":buildingBox.x2-buildingBox.x1, "height":buildingBox.y2-buildingBox.y1}
         upgrades = {"top":upgrade.y, "left":upgrade.x, "width":1, "height":1}
@@ -310,8 +331,8 @@ def main():
         #print(pic.pixel(temple.x,temple.y))
         #print(pic.pixel(wizard.x,wizard.y))
         #print(pic.pixel(shipment.x,shipment.y))
-        print(pic.pixel(lab.x,lab.y))
-        print(pic.pixel(portal.x,portal.y))
+        #print(pic.pixel(lab.x,lab.y))
+        #print(pic.pixel(portal.x,portal.y))
         print(pic.pixel(time.x,time.y))
         #mss.tools.to_png(pic.rgb,pic.size, output=output)
         
@@ -341,6 +362,8 @@ def main():
                         e.insert(0,cost)
                         i+=1
                         
+                    totalCPS.config(text=calcTotalCPS(cps,builds))
+                    
                     updateGrid(tableEntries,displayMultiplier,builds,cps, buildingArray)
                 except:
                     pass
@@ -363,10 +386,10 @@ def main():
                     
                 pic = sct.grab(buildings)
                 
-                if (pic.pixel(time.x,time.y) == time.color2 and (costCalc(builds,buildingArray,time,cps) or builds[11] == 0)):
+                if (pic.pixel(time.x,time.y) == (149, 144, 126) and (costCalc(builds,buildingArray,time,cps) or builds[11] == 0)):
                     click(time.tX,time.tY,1)
                     builds[11] += 1
-                elif (pic.pixel(portal.x,portal.y) == portal.color2 and (costCalc(builds,buildingArray,portal,cps) or builds[10] == 0)):
+                elif (pic.pixel(portal.x,portal.y) == (143, 140, 125) and (costCalc(builds,buildingArray,portal,cps) or builds[10] == 0)):
                     click(portal.tX,portal.tY,1)
                     builds[10] += 1
                 elif (pic.pixel(lab.x,lab.y) == lab.color2 and (costCalc(builds,buildingArray,lab,cps) or builds[9] == 0)):
@@ -413,6 +436,8 @@ def main():
                     else:
                         pass
                     
+                totalCPS.config(text=calcTotalCPS(cps,builds))
+                
                 updateGrid(tableEntries,displayMultiplier,builds,cps,buildingArray)
                 
                 mCosts = calcAllCosts(builds,buildingArray,cps,False)
